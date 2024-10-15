@@ -1,2 +1,2 @@
-# MorseSyncBot
-Discord bot for govee light sync
+# MorseBot
+Multifunctionality discord bot
