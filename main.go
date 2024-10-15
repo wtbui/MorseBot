@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	mb "https://github.com/wtbui/MorseBot/cmd"
-	options "https://github.com/wtbui/MorseBot/pkg/options"
+	mb "github.com/wtbui/MorseBot/cmd"
+	options "github.com/wtbui/MorseBot/pkg/options"
 )
 
 var version = "0.1"
