@@ -30,5 +30,7 @@ func main() {
 		return
 	}
 
-	code, err := mb.Start(opts)
+	//code missing exit code for now
+	_, err := mb.Start(opts)
+
 }

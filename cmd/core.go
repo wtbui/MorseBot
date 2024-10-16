@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/wtbui/MorseBot/pkg/options"
+	"github.com/wtbui/MorseBot/pkg/events"
 	discordgo "github.com/bwmarrin/discordgo"
 )
 
@@ -19,7 +20,12 @@ func Start(opts *options.Options) (int, error) {
 		}
 	}
 
-	discord, err := discordgo.New("MorseBot " + token)
+	mb_sess, err := discordgo.New("MorseBot " + token)
+	if err != nil {
+		return ExitError, err
+	}
+	
+	err = events.RegisterHandlers(mb_sess)
 	if err != nil {
 		return ExitError, err
 	}
