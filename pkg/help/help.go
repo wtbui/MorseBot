@@ -1,16 +1,21 @@
 package help
 
 import (
-	discordgo "github.com/bwmarrin/discordgo"	
+	"fmt"
+
+	discordgo "github.com/bwmarrin/discordgo"
+	utils "github.com/wtbui/MorseBot/pkg/utils"
 )
 
-var commandMap = map[string]CommandFunc {
-	"echo": RunEcho,
-	"help": RunHelp,
+
+func RunEcho(s *discordgo.Session, botOpts *utils.BotOptions) error {
+	fmt.Println("Running Echo")
+
+	return nil
 }
 
-func RunEcho(s *discordgo.Session, m *discordgo.MessageCreate) {
+func RunHelp(s *discordgo.Session, botOpts *utils.BotOptions) error {
+	fmt.Println("Running Help")
 
+	return nil
 }
-
-func Run

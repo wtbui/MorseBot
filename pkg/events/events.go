@@ -8,11 +8,18 @@ import (
 	"syscall"
 
 	discordgo "github.com/bwmarrin/discordgo"
+	help "github.com/wtbui/MorseBot/pkg/help"
+	utils "github.com/wtbui/MorseBot/pkg/utils"
 )
 
 var (
 	CommandPrefix = "!"
 )
+
+type CommandFunc func(s *discordgo.Session, botOpts *utils.BotOptions) error
+var commandMap = map[string]CommandFunc {
+	"echo": help.RunEcho, "help": help.RunHelp,
+}
 
 func InitBot(s *discordgo.Session) (err error) {
 	s.Open()
@@ -43,27 +50,30 @@ func registerHandlers(s *discordgo.Session) (err error) {
 }
 
 func ready(s *discordgo.Session, event *discordgo.Ready) {
-	// Set the playing status.
 	s.UpdateGameStatus(1, "That's Golf!")
 }
 
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	fmt.Println("Message Found in " + m.ChannelID + " from " + m.Author.ID)
 
-	// Avoid reading self created messages
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
 	
 	if strings.HasPrefix(m.Content, CommandPrefix) {
-		// Handle New Command
-		opts, err := ParseOptions(m.Content)
+		opts, err := utils.ParseOptions(m.Content, CommandPrefix)
 		if err != nil {
 			fmt.Println("Failure to parse command options")
 			return
 		}
 
-		err = opts.Command(opts)
+		if cmdFunc, ok := commandMap[opts.Command]; ok {
+			err = cmdFunc(s, opts)
+		} else {
+			fmt.Println("Unrecognized Command")
+			return
+		} 
+	
 		if err != nil {
 			fmt.Println("Failure to execute command")
 		}
