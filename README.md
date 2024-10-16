@@ -1,2 +1,2 @@
 # MorseBot
-Multifunctionality discord bot
+Morsebot 2.0
