@@ -8,18 +8,25 @@ import (
 	"syscall"
 
 	discordgo "github.com/bwmarrin/discordgo"
-	help "github.com/wtbui/MorseBot/pkg/help"
+	echo "github.com/wtbui/MorseBot/pkg/echo"
 	utils "github.com/wtbui/MorseBot/pkg/utils"
 )
 
 var (
-	CommandPrefix = "!"
+	CommandPrefix = "#"
 )
 
-type CommandFunc func(s *discordgo.Session, botOpts *utils.BotOptions) error
-var commandMap = map[string]CommandFunc {
-	"echo": help.RunEcho, "help": help.RunHelp,
+type CommandFunc func(s *discordgo.Session, cid string, botOpts *utils.BotOptions) error
+var commandMap = map[string]Command {
+	"help": Command{"help", echo.RunEcho, "Displays this help message"},
+	"echo": Command{"echo", echo.RunEcho, "Echoes back a message in the same channel"},
 }
+
+type Command struct {
+	Name string
+	CmdFunc CommandFunc
+	Descrip string
+} 
 
 func InitBot(s *discordgo.Session) (err error) {
 	s.Open()
@@ -49,10 +56,12 @@ func registerHandlers(s *discordgo.Session) (err error) {
 	return nil
 }
 
+// Ready Event Handler
 func ready(s *discordgo.Session, event *discordgo.Ready) {
 	s.UpdateGameStatus(1, "That's Golf!")
 }
 
+// Message Create Event Handler
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	fmt.Println("Message Found in " + m.ChannelID + " from " + m.Author.ID)
 
@@ -67,8 +76,13 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 
+		if opts.Command == "help" {
+			runHelp(s, m.ChannelID)
+			return
+		}
+
 		if cmdFunc, ok := commandMap[opts.Command]; ok {
-			err = cmdFunc(s, opts)
+			err = cmdFunc.CmdFunc(s, m.ChannelID, opts)
 		} else {
 			fmt.Println("Unrecognized Command")
 			return
@@ -78,4 +92,16 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			fmt.Println("Failure to execute command")
 		}
 	}
+}
+
+func runHelp(s *discordgo.Session, cid string) {
+	eb := utils.NewEmbed()
+	eb.SetTitle("Morse Bot Help Menu")
+	eb.SetColor(0x61E294)
+	eb.SetThumbnail(s.State.User.AvatarURL(""))
+	for _, cmd := range commandMap {
+		eb.AddField(cmd.Descrip, "```Usage: " + CommandPrefix + cmd.Name + "```", false)
+	}
+
+	s.ChannelMessageSendEmbed(cid, eb.MessageEmbed)
 }
