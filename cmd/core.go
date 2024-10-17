@@ -7,13 +7,25 @@ import (
 
 	"github.com/wtbui/MorseBot/pkg/options"
 	"github.com/wtbui/MorseBot/pkg/events"
+	data "github.com/wtbui/MorseBot/pkg/data"
 	discordgo "github.com/bwmarrin/discordgo"
 )
 
 // Initialize Morse Bot + Logger (TODO)
 func Start(opts *options.Options) (int, error) {
-	fmt.Println("Starting MorseBot...")
+	// Register any new govee keys to database
+	if len(opts.Register) > 0 {
+		fmt.Println("Registering new govee keys into DB")
+		err := data.RegisterGKey(opts.Register)
+		if err != nil {
+			return ExitError, err
+		}
 
+		return ExitOk, nil
+	}
+
+	// Start up bot using discordgo package
+	fmt.Println("Starting MorseBot...")
 	var token = ""
 
 	if len(opts.APIKey) == 0 {
@@ -22,7 +34,7 @@ func Start(opts *options.Options) (int, error) {
 		if len(token) == 0 {
 			return ExitError, errors.New("Missing Discord API Key")
 		}
-
+		
 		if token == "" {
 			// TODO setup logger
 		}
