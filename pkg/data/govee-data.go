@@ -10,14 +10,14 @@ type GRegistration struct {
 	User string
 	GKey string
 }
- 
-func RegisterGKey(regStr string) error {
+
+func RegisterUser(regStr string) error {
 	regList, err := ParseRegistrations(regStr)
 	if err != nil {
 		return err
 	}
 
-	err = WriteRegistrations(regList)
+	err = UpdateRegistrations(regList)
 	if err != nil {
 		return err
 	}
@@ -56,13 +56,7 @@ func ParseRegistrations(regStr string) (map[string]GRegistration, error) {
 	return regList, nil
 }
 
-func WriteRegistrations(regList map[string]GRegistration) error {
-	dbFile := os.Getenv("GOVEEDB")
-	file, err := os.OpenFile(dbFile, os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-  
+func UpdateRegistrations(regList map[string]GRegistration) error { 
 	oldRegList, err := RetrieveCurrentGDB()
 	if err != nil {
 		return err
@@ -73,18 +67,24 @@ func WriteRegistrations(regList map[string]GRegistration) error {
 		
 		if !exists {
 			regList[user] = GRegistration{reg.User, reg.GKey} 
-		}
-	}
-
-	for user, reg := range regList {
-		_, exists := oldRegList[user]
-
-		if !exists {
-			fmt.Println("Registered user \"" + user + "\" with govee key \"" + reg.GKey + "\"")
 		} else {
 			fmt.Println("Updated user \"" + user + "\" with govee key \"" + reg.GKey + "\"")
 		}
+	}
 
+	err = writeRegistrations(regList)
+
+	return err
+}
+
+func writeRegistrations(regList map[string]GRegistration) error {
+	dbFile := os.Getenv("GOVEEDB")
+	file, err := os.OpenFile(dbFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	if err != nil {
+		return err
+	}
+
+	for user, reg := range regList {
 		_, err = file.WriteString(user + ":" + reg.GKey + ",")
 		if err != nil {
 			return err
@@ -114,4 +114,30 @@ func UserExist(username string) (bool, error) {
 	_, exists := currentGDB[username]
 
 	return exists, nil
+}
+
+func DeleteUser(user string) error {
+	currentGDB, err := RetrieveCurrentGDB()
+	if err != nil {
+		return err
+	}
+
+	_, exists := currentGDB[user]
+	if exists {
+		fmt.Println("Deleted user \"" + user + "\"")
+		delete(currentGDB, user)
+	} else {
+		fmt.Println("User \"" + user + "\" not found")
+	}
+
+	for user, _ := range currentGDB {
+		fmt.Println(user)
+	}
+	
+	err = writeRegistrations(currentGDB)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

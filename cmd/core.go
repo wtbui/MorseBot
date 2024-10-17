@@ -14,9 +14,19 @@ import (
 // Initialize Morse Bot + Logger (TODO)
 func Start(opts *options.Options) (int, error) {
 	// Register any new govee keys to database
-	if len(opts.Register) > 0 {
+	if len(opts.RegisterGKey) > 0 {
 		fmt.Println("Registering new govee keys into DB")
-		err := data.RegisterGKey(opts.Register)
+		err := data.RegisterUser(opts.RegisterGKey)
+		if err != nil {
+			return ExitError, err
+		}
+
+		return ExitOk, nil
+	}
+
+	if len(opts.DeleteGKey) > 0 {
+		fmt.Println("Deleting user from govee key DB")
+		err := data.DeleteUser(opts.DeleteGKey)
 		if err != nil {
 			return ExitError, err
 		}
