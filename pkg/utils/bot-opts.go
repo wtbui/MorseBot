@@ -6,11 +6,12 @@ import (
 
 type BotOptions struct {
 	Command string	
+	Sender string
 	Username string
 	Aux []string
 }
 
-var BotOptionsDefaults = BotOptions{"help", "", []string{}}
+var BotOptionsDefaults = BotOptions{"help", "", "", []string{}}
 
 func ParseOptions(message string, commandPrefix string) (*BotOptions, error) {
 	var botOptions = &BotOptionsDefaults
@@ -25,12 +26,15 @@ func ParseOptions(message string, commandPrefix string) (*BotOptions, error) {
 	
 	for _, opt := range args {
 		// Use switch statement if more options added
-		if strings.HasPrefix(opt, "@") {
-			botOptions.Username = strings.TrimPrefix(opt, "@")
+		if strings.HasPrefix(opt, "<") {
+			botOptions.Username = strings.Trim(opt, "<")
+			botOptions.Username = strings.Trim(botOptions.Username, "@")
+			botOptions.Username = strings.Trim(botOptions.Username, ">")
 		} else {
 			botOptions.Aux = append(botOptions.Aux, opt)
 		}
 	}
+
 
 	return botOptions, nil
 }

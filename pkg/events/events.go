@@ -10,16 +10,19 @@ import (
 	discordgo "github.com/bwmarrin/discordgo"
 	echo "github.com/wtbui/MorseBot/pkg/echo"
 	utils "github.com/wtbui/MorseBot/pkg/utils"
+	lsyn "github.com/wtbui/MorseBot/pkg/lightsync"
 )
 
 var (
 	CommandPrefix = "#"
 )
 
+// Define entry points into commands here
 type CommandFunc func(s *discordgo.Session, cid string, botOpts *utils.BotOptions) error
 var commandMap = map[string]Command {
 	"help": Command{"help", echo.RunEcho, "Displays this help message"},
 	"echo": Command{"echo", echo.RunEcho, "Echoes back a message in the same channel"},
+	"lights": Command{"lights", lsyn.RunLightsync, "Adjusts lights"},
 }
 
 type Command struct {
@@ -71,6 +74,8 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	
 	if strings.HasPrefix(m.Content, CommandPrefix) {
 		opts, err := utils.ParseOptions(m.Content, CommandPrefix)
+		opts.Sender = m.Author.ID
+
 		if err != nil {
 			fmt.Println("Failure to parse command options")
 			return
