@@ -2,7 +2,6 @@ package events
 
 import (
 	"strings"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -11,6 +10,7 @@ import (
 	echo "github.com/wtbui/MorseBot/pkg/echo"
 	utils "github.com/wtbui/MorseBot/pkg/utils"
 	lsyn "github.com/wtbui/MorseBot/pkg/lightsync"
+	"go.uber.org/zap"
 )
 
 var (
@@ -40,12 +40,12 @@ func InitBot(s *discordgo.Session) (err error) {
 	}
 
 	// Wait here until CTRL-C or other term signal is received.
-	fmt.Println("Morse bot is now running.  Press CTRL-C to exit.")
+	zap.S().Info("Morse bot is now running.  Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc
 
-	fmt.Println("Closing Morse Bot...")
+	zap.S().Info("Closing Morse Bot...")
 	s.Close()
 
 	return nil
@@ -66,7 +66,7 @@ func ready(s *discordgo.Session, event *discordgo.Ready) {
 
 // Message Create Event Handler
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	fmt.Println("Message Found in " + m.ChannelID + " from " + m.Author.ID)
+	zap.S().Info("Message Found in " + m.ChannelID + " from " + m.Author.ID)
 
 	if m.Author.ID == s.State.User.ID {
 		return
@@ -77,7 +77,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		opts.Sender = m.Author.ID
 
 		if err != nil {
-			fmt.Println("Failure to parse command options")
+			zap.S().Info("Failure to parse command options")
 			return
 		}
 
@@ -89,12 +89,12 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if cmdFunc, ok := commandMap[opts.Command]; ok {
 			err = cmdFunc.CmdFunc(s, m.ChannelID, opts)
 		} else {
-			fmt.Println("Unrecognized Command")
+			zap.S().Info("Unrecognized Command")
 			return
 		} 
 	
 		if err != nil {
-			fmt.Println("Failure to execute command")
+			zap.S().Info("Failure to execute command")
 		}
 	}
 }

@@ -3,19 +3,22 @@ package morsebot
 import (
 	"os"
 	"errors"
-	"fmt"
 
 	"github.com/wtbui/MorseBot/pkg/options"
 	"github.com/wtbui/MorseBot/pkg/events"
 	data "github.com/wtbui/MorseBot/pkg/data"
 	discordgo "github.com/bwmarrin/discordgo"
+	logger "github.com/wtbui/MorseBot/pkg/logging"
+  "go.uber.org/zap"
 )
 
-// Initialize Morse Bot + Logger (TODO)
+// Initialize Morse Bot + Logger 
 func Start(opts *options.Options) (int, error) {
+	logger.InitLogger()
+
 	// Register any new govee keys to database
 	if len(opts.RegisterGKey) > 0 {
-		fmt.Println("Registering new govee keys into DB")
+		zap.S().Info("Registering new govee keys into DB")
 		err := data.RegisterUser(opts.RegisterGKey)
 		if err != nil {
 			return ExitError, err
@@ -25,7 +28,7 @@ func Start(opts *options.Options) (int, error) {
 	}
 
 	if len(opts.DeleteGKey) > 0 {
-		fmt.Println("Deleting user from govee key DB")
+		zap.S().Info("Deleting user from govee key DB")
 		err := data.DeleteUser(opts.DeleteGKey)
 		if err != nil {
 			return ExitError, err
@@ -35,7 +38,7 @@ func Start(opts *options.Options) (int, error) {
 	}
 
 	// Start up bot using discordgo package
-	fmt.Println("Starting MorseBot...")
+	zap.S().Info("Starting MorseBot...")
 	var token = ""
 
 	if len(opts.APIKey) == 0 {
@@ -44,13 +47,9 @@ func Start(opts *options.Options) (int, error) {
 		if len(token) == 0 {
 			return ExitError, errors.New("Missing Discord API Key")
 		}
-		
-		if token == "" {
-			// TODO setup logger
-		}
 	}
 
-	fmt.Println("Found API Key: " + token)
+	zap.S().Info("Found API Key: " + token)
 	mb_sess, err := discordgo.New("Bot " + token)
 	if err != nil {
 		return ExitError, err
