@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-func InitLogger() {
+func InitLogger(verbose bool) {
 	// Create a new production logger
     encoderConfig := zapcore.EncoderConfig{
         MessageKey: "message",                         // Key for the actual log message
@@ -17,7 +17,12 @@ func InitLogger() {
 
 	// Create a new core with the custom encoder
 	encoder := zapcore.NewConsoleEncoder(encoderConfig) // Use ConsoleEncoder or JSONEncoder
-	core := zapcore.NewCore(encoder, zapcore.AddSync(os.Stdout), zap.InfoLevel)
+	
+	zapLevel := zap.InfoLevel
+	if verbose {
+		zapLevel = zap.DebugLevel	
+	}
+	core := zapcore.NewCore(encoder, zapcore.AddSync(os.Stdout), zapLevel)
 
 	logger := zap.New(core)
 	sugaredLogger := logger.Sugar()

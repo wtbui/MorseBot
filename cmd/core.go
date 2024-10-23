@@ -14,7 +14,7 @@ import (
 
 // Initialize Morse Bot + Logger 
 func Start(opts *options.Options) (int, error) {
-	logger.InitLogger()
+	logger.InitLogger(opts.Verbose)
 
 	// Register any new govee keys to database
 	if len(opts.RegisterGKey) > 0 {

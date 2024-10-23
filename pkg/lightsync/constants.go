@@ -1,11 +1,11 @@
 package lightsync
 
-const (
-	Red = 16711680
-	Blue = 255
-	Green = 65280
-	Purple = 16711935
-	Orange = 16753920
-	White = 16777215
-	Yellow = 16776960
-)
+var LColors = map[string]int{ 
+	"red": 16711680,
+	"blue": 255,
+	"green": 65280,
+	"purple": 16711935,
+	"orange": 16753920,
+	"white": 16777215,
+	"yellow": 16776960,
+}

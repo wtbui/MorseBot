@@ -11,11 +11,15 @@ type BotOptions struct {
 	Aux []string
 }
 
-var BotOptionsDefaults = BotOptions{"help", "", "", []string{}}
+func botOptsDefaults() BotOptions {
+	BotOptionsDefaults := BotOptions{"help", "", "", []string{}}
+	return BotOptionsDefaults
+}
 
 func ParseOptions(message string, commandPrefix string) (*BotOptions, error) {
-	var botOptions = &BotOptionsDefaults
-	
+	var botOption = botOptsDefaults()
+	botOptions := &botOption
+
 	content := strings.TrimPrefix(message, commandPrefix)
 	parts := strings.Fields(content)
 	

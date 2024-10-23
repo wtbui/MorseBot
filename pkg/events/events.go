@@ -86,6 +86,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 
+		zap.S().Info("Attempting to run command " + opts.Command + " from user " + m.Author.ID)
 		if cmdFunc, ok := commandMap[opts.Command]; ok {
 			err = cmdFunc.CmdFunc(s, m.ChannelID, opts)
 		} else {
@@ -95,6 +96,9 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	
 		if err != nil {
 			zap.S().Info("Failure to execute command")
+			zap.S().Info(err)
+		} else {
+			zap.S().Info("Command " + opts.Command + " ran succesfully")
 		}
 	}
 }

@@ -3,8 +3,9 @@ package data
 import (
 	"os"
 	"strings"
-	"fmt"
 	"io/ioutil"
+	"go.uber.org/zap"
+	"strconv"
 )
 type GRegistration struct {
 	User string
@@ -25,12 +26,14 @@ func RegisterUser(regStr string) error {
 	return nil	
 }
 
-func ParseRegistrations(regStr string) (map[string]GRegistration, error) {
+func ParseRegistrations(regStr string) (map[string]*GRegistration, error) {
 	regStrList := strings.Split(strings.ReplaceAll(regStr, " ", ""), ",")
-	regList := map[string]GRegistration{}
+	regList := map[string]*GRegistration{}
 
 	for _, reg := range regStrList {
-		gReg := GRegistration{}
+		zap.S().Debug(reg)
+		gRegOrig := GRegistration{}
+		gReg := &gRegOrig
 
 		singleReg := strings.Split(reg, ":")
 
@@ -51,12 +54,16 @@ func ParseRegistrations(regStr string) (map[string]GRegistration, error) {
 		gReg.GKey = singleReg[1]
 
 		regList[gReg.User] = gReg
+		zap.S().Debug(len(regList))
+		zap.S().Debug(gReg.User)
 	}
+
+	zap.S().Debug("Found " + strconv.Itoa(len(regList)) + " users in GoveeDB")
 
 	return regList, nil
 }
 
-func UpdateRegistrations(regList map[string]GRegistration) error { 
+func UpdateRegistrations(regList map[string]*GRegistration) error { 
 	oldRegList, err := RetrieveCurrentGDB()
 	if err != nil {
 		return err
@@ -66,9 +73,9 @@ func UpdateRegistrations(regList map[string]GRegistration) error {
 		_, exists := regList[user]
 		
 		if !exists {
-			regList[user] = GRegistration{reg.User, reg.GKey} 
+			regList[user] = &GRegistration{reg.User, reg.GKey} 
 		} else {
-			fmt.Println("Updated user \"" + user + "\" with govee key \"" + reg.GKey + "\"")
+			zap.S().Info("Updated user \"" + user + "\" with govee key \"" + reg.GKey + "\"")
 		}
 	}
 
@@ -77,7 +84,7 @@ func UpdateRegistrations(regList map[string]GRegistration) error {
 	return err
 }
 
-func writeRegistrations(regList map[string]GRegistration) error {
+func writeRegistrations(regList map[string]*GRegistration) error {
 	dbFile := os.Getenv("GOVEEDB")
 	file, err := os.OpenFile(dbFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
@@ -95,13 +102,14 @@ func writeRegistrations(regList map[string]GRegistration) error {
 	return nil
 }
 
-func RetrieveCurrentGDB() (map[string]GRegistration, error) {
+func RetrieveCurrentGDB() (map[string]*GRegistration, error) {
 	dbFile := os.Getenv("GOVEEDB")
 	content, err := ioutil.ReadFile(dbFile)
 	if err != nil {
 		return nil, err
 	}
-	
+
+	zap.S().Debug("Raw Govee Database: " + string(content))
 	return ParseRegistrations(string(content))
 } 
 
@@ -124,14 +132,14 @@ func DeleteUser(user string) error {
 
 	_, exists := currentGDB[user]
 	if exists {
-		fmt.Println("Deleted user \"" + user + "\"")
+		zap.S().Info("Deleted user \"" + user + "\"")
 		delete(currentGDB, user)
 	} else {
-		fmt.Println("User \"" + user + "\" not found")
+		zap.S().Info("User \"" + user + "\" not found")
 	}
 
 	for user, _ := range currentGDB {
-		fmt.Println(user)
+		zap.S().Info(user)
 	}
 	
 	err = writeRegistrations(currentGDB)
