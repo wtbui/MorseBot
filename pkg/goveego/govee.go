@@ -160,6 +160,17 @@ func (gclient GoveeClient) TurnOnOff(device GDevice, value int) error {
 	return err
 }
 
+func (gclient GoveeClient) TurnOnOffAll(value int) error {
+	for _, device := range gclient.Devices {
+		err := gclient.TurnOnOff(device, value)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (gclient GoveeClient) ChangeColor(device GDevice, value int) error {
 	zap.S().Debug("Setting light powerswitch value to " + strconv.Itoa(value) + " for device " + device.DeviceName)
 	err := gclient.UpdateDevice(device, "devices.capabilities.color_setting", "colorRgb", value)
@@ -175,15 +186,23 @@ func (gclient GoveeClient) ChangeColorAll(value int) error {
 	}
 
 	return nil
-} 
+}
 
-func (gclient GoveeClient) TurnOnOffAll(value int) error {
+func (gclient GoveeClient) ChangeTemp(device GDevice, value int) error {
+	zap.S().Debug("Setting light powerswitch value to " + strconv.Itoa(value) + " for device " + device.DeviceName)
+	err := gclient.UpdateDevice(device, "devices.capabilities.color_setting", "colorTemperatureK", value)
+	return err
+}
+
+func (gclient GoveeClient) ChangeTempAll(value int) error {
 	for _, device := range gclient.Devices {
-		err := gclient.TurnOnOff(device, value)
+		err := gclient.ChangeTemp(device, value)
 		if err != nil {
 			return err
 		}
 	}
 
 	return nil
-} 
+}
+
+

@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	CommandPrefix = "#"
+	CommandPrefix = "!"
 )
 
 // Define entry points into commands here

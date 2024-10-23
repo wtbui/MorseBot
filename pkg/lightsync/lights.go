@@ -13,8 +13,9 @@ import (
 
 type LSyncJob struct {
 	Users []string
-	Toggle string
+	Off bool
 	Color int
+	Temp int
 }
  
 func RunLightsync(s *discordgo.Session, cid string, botOpts *utils.BotOptions) error {
@@ -44,13 +45,16 @@ func runLightsJob(lJob *LSyncJob) error {
 			return err
 		}
 		
-		if lJob.Toggle == "on" {
-			gclient.TurnOnOffAll(1)
-		} else {
+		if lJob.Off {
 			gclient.TurnOnOffAll(0)
+			return nil
+		} else {
+			gclient.TurnOnOffAll(1)
 		}
-
-		if lJob.Color > -1 {
+		
+		if lJob.Temp > -1 {
+			gclient.ChangeTempAll(lJob.Temp)
+		} else if lJob.Color > -1 {
 			gclient.ChangeColorAll(lJob.Color)
 		}
 	}
@@ -59,7 +63,7 @@ func runLightsJob(lJob *LSyncJob) error {
 }
 
 func parseOptions(botOpts *utils.BotOptions) (*LSyncJob, error) {
-	newJob := &LSyncJob{[]string{}, "on", -1}
+	newJob := &LSyncJob{[]string{}, false, -1, -1}
 
 	// Fetch from Database
 	goveeDb, err := data.RetrieveCurrentGDB()	
@@ -71,10 +75,13 @@ func parseOptions(botOpts *utils.BotOptions) (*LSyncJob, error) {
 	zap.S().Debug(len(goveeDb))
 
 	if len(botOpts.Username) > 0 {
-		newJob.Users = append(newJob.Users, goveeDb[botOpts.Username].GKey)
-		zap.S().Debug("Appended " + goveeDb[botOpts.Username].GKey)
+		if target, ok := goveeDb[botOpts.Username]; ok {
+			newJob.Users = append(newJob.Users, target.GKey)
+		}
 	} else {
-		newJob.Users = append(newJob.Users, goveeDb[botOpts.Sender].GKey)	
+		if target, ok := goveeDb[botOpts.Sender]; ok {
+			newJob.Users = append(newJob.Users, target.GKey)	
+		}
 	}
 
 	for _, opt := range botOpts.Aux {
@@ -94,7 +101,11 @@ func parseOptions(botOpts *utils.BotOptions) (*LSyncJob, error) {
 		}
 
 		if strings.ToLower(opt) == "off" {
-			newJob.Toggle = strings.ToLower(opt)
+			newJob.Off = true
+		}
+
+		if temp, ok := LTemps[strings.ToLower(opt)]; ok {
+			newJob.Temp = temp
 		}
 	}	
 

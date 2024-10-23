@@ -9,3 +9,9 @@ var LColors = map[string]int{
 	"white": 16777215,
 	"yellow": 16776960,
 }
+
+var LTemps = map[string]int {
+	"warm": 2000,
+	"cool": 4000,
+	"daylight": 9000,
+}
