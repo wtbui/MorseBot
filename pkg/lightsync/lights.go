@@ -16,6 +16,8 @@ type LSyncJob struct {
 	Off bool
 	Color int
 	Temp int
+	EffectId int
+	EffectParamId int
 }
  
 func RunLightsync(s *discordgo.Session, cid string, botOpts *utils.BotOptions) error {
@@ -46,16 +48,29 @@ func runLightsJob(lJob *LSyncJob) error {
 		}
 		
 		if lJob.Off {
-			gclient.TurnOnOffAll(0)
-			return nil
+			err = gclient.TurnOnOffAll(0)
+			return err	
 		} else {
-			gclient.TurnOnOffAll(1)
+			err = gclient.TurnOnOffAll(1)
+		}
+
+		if err != nil {
+			return err
 		}
 		
+		if lJob.EffectId > -1 {
+			err = gclient.ChangeEffectAll(lJob.EffectParamId, lJob.EffectId)
+			return err
+		}
+
 		if lJob.Temp > -1 {
-			gclient.ChangeTempAll(lJob.Temp)
-		} else if lJob.Color > -1 {
-			gclient.ChangeColorAll(lJob.Color)
+			err = gclient.ChangeTempAll(lJob.Temp)
+			return err
+		}
+
+		if lJob.Color > -1 {
+			err = gclient.ChangeColorAll(lJob.Color)
+			return err
 		}
 	}
 
@@ -63,7 +78,7 @@ func runLightsJob(lJob *LSyncJob) error {
 }
 
 func parseOptions(botOpts *utils.BotOptions) (*LSyncJob, error) {
-	newJob := &LSyncJob{[]string{}, false, -1, -1}
+	newJob := &LSyncJob{[]string{}, false, -1, -1, -1, -1}
 
 	// Fetch from Database
 	goveeDb, err := data.RetrieveCurrentGDB()	
@@ -106,6 +121,11 @@ func parseOptions(botOpts *utils.BotOptions) (*LSyncJob, error) {
 
 		if temp, ok := LTemps[strings.ToLower(opt)]; ok {
 			newJob.Temp = temp
+		}
+
+		if effect, ok := LEffects[strings.ToLower(opt)]; ok {
+			newJob.EffectId = effect.Id
+			newJob.EffectParamId = effect.ParamId
 		}
 	}	
 

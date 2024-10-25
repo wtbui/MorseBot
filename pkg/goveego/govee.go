@@ -41,13 +41,41 @@ type GConBody struct {
 type GConBodyPayload struct {
 	SKU string `json:"sku"`
 	Device string `json:"device"`
-	Capability GConBodyCapability `json:"capability"`
+	Capability GConBodyCap `json:"capability"`
 }
 
-type GConBodyCapability struct {
+type GConBodyCapabilitySingle struct {
 	Type string `json:"type"`
 	Instance string `json:"instance"`
 	Value int `json:"value"` 
+}
+
+type GConBodyCapabilityEffect struct {
+	Type string `json:"type"`
+	Instance string `json:"instance"`
+	Value GConCapEffectValue `json:"value"`
+}
+
+type GConCapEffectValue struct {
+	Id int `json:"id"`
+	ParamId int `json:"paramId"`
+}
+
+type GConBodyCap interface {
+	GetType() string
+}
+
+func (gcap GConBodyCapabilitySingle) GetType() string {
+	return gcap.Type
+}
+
+func (gcap GConBodyCapabilityEffect) GetType() string {
+	return gcap.Type
+}
+
+type CapData struct {
+	Type string
+	Value []int
 }
 
 var (
@@ -121,17 +149,32 @@ func makeRequest(gclient *GoveeClient, url string, reqType string, reqBody []byt
 	return respInfo, err
 }
 
-func (gclient GoveeClient) UpdateDevice(device GDevice, capType string, capInst string, capValue int) error {
+func (gclient GoveeClient) UpdateDevice(device GDevice, capType string, capInst string, capData CapData) error { 
+	var cap GConBodyCap
+
+	if capData.Type == "single" {
+		cap = GConBodyCapabilitySingle{
+			Type: capType,
+			Instance: capInst,
+			Value: capData.Value[0],
+		}
+	} else if capData.Type == "effect" {
+		cap = GConBodyCapabilityEffect{
+			Type: capType,
+			Instance: capInst,
+			Value: GConCapEffectValue{
+				Id: capData.Value[1],
+				ParamId: capData.Value[0],
+			},
+		}
+	}
+
 	reqBody := GConBody{
 		RequestId: "uuid",
 		Payload: GConBodyPayload{
 			SKU: device.SKU,
 			Device: device.DeviceAddr,
-			Capability: GConBodyCapability{
-				Type: capType,
-				Instance: capInst,
-				Value: capValue,
-			},
+			Capability: cap,
 		},
 	}
 	
@@ -156,7 +199,7 @@ func (gclient GoveeClient) UpdateDevice(device GDevice, capType string, capInst 
 
 func (gclient GoveeClient) TurnOnOff(device GDevice, value int) error {
 	zap.S().Debug("Setting light powerswitch value to " + strconv.Itoa(value) + " for device " + device.DeviceName)
-	err := gclient.UpdateDevice(device, "devices.capabilities.on_off", "powerSwitch", value)
+	err := gclient.UpdateDevice(device, "devices.capabilities.on_off", "powerSwitch", CapData{"single", []int{value}})
 	return err
 }
 
@@ -172,8 +215,8 @@ func (gclient GoveeClient) TurnOnOffAll(value int) error {
 }
 
 func (gclient GoveeClient) ChangeColor(device GDevice, value int) error {
-	zap.S().Debug("Setting light powerswitch value to " + strconv.Itoa(value) + " for device " + device.DeviceName)
-	err := gclient.UpdateDevice(device, "devices.capabilities.color_setting", "colorRgb", value)
+	zap.S().Debug("Setting light colorId value to " + strconv.Itoa(value) + " for device " + device.DeviceName)
+	err := gclient.UpdateDevice(device, "devices.capabilities.color_setting", "colorRgb", CapData{"single", []int{value}})
 	return err
 }
 
@@ -189,8 +232,8 @@ func (gclient GoveeClient) ChangeColorAll(value int) error {
 }
 
 func (gclient GoveeClient) ChangeTemp(device GDevice, value int) error {
-	zap.S().Debug("Setting light powerswitch value to " + strconv.Itoa(value) + " for device " + device.DeviceName)
-	err := gclient.UpdateDevice(device, "devices.capabilities.color_setting", "colorTemperatureK", value)
+	zap.S().Debug("Setting light colorTemperatureK value to " + strconv.Itoa(value) + " for device " + device.DeviceName)
+	err := gclient.UpdateDevice(device, "devices.capabilities.color_setting", "colorTemperatureK", CapData{"single", []int{value}})
 	return err
 }
 
@@ -204,5 +247,23 @@ func (gclient GoveeClient) ChangeTempAll(value int) error {
 
 	return nil
 }
+
+func (gclient GoveeClient) ChangeEffect(device GDevice, paramId int, id int) error {
+	zap.S().Debug("Setting light lightscene value to " + strconv.Itoa(id) + " for device " + device.DeviceName)
+	err := gclient.UpdateDevice(device, "devices.capabilities.dynamic_scene", "lightScene", CapData{"effect", []int{paramId, id}})
+	return err
+}
+
+func (gclient GoveeClient) ChangeEffectAll(paramId int, id int) error {
+	for _, device := range gclient.Devices {
+		err := gclient.ChangeEffect(device, paramId, id)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 
 
