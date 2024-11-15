@@ -4,6 +4,7 @@ type LEffect struct {
 	Id int `json:"id"`
 	ParamId int `json:"paramId"`
 }
+
 var LColors = map[string]int{ 
 	"red": 16711680,
 	"blue": 255,
