@@ -11,5 +11,6 @@ To add a new module: <br />
 3. Follow structure for messagecreate commands (see echo for example)<br />
 Event handler in events.go, add new event if want to use something other than messagecreate<br />
 
-"make" to generate binary
+Build Commands <br />
+"make" to build project <br />
 "make clean" to delete
