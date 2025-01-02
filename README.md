@@ -1,5 +1,7 @@
 # MorseBot
 Morsebot 2.0<br />
+Current Features<br />
+1. Govee IOT light control<br />
 
 Setup for Dev<br />
 Set env variable $MORSEBOT to discord key<br />
