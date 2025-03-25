@@ -39,10 +39,10 @@ MorseBot is written in Go (Golang) and hosted on an Amazon EC2 server. It is str
   - **pkg/utils:**  
     Contains helper functions to enhance bot functionality, including a wrapper for the Discord API's embed message function for generating user friendly bot responses.
 
-##Future Plans/Roadmap
+## Future Plans/Roadmap
 
 This is still currently being maintained with plans for future updates/features to improve scalability and performance.
-###Planned Additions
+### Planned Additions
 
 - **Database:**
 	Currently uses a local text based datastore. Plans to move to a relational SQL 	based database to improve lookup functionality and scalability.
