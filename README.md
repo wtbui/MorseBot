@@ -8,7 +8,7 @@ Morsebot is a messaging bot for Discord that allows users to control IoT Govee l
   Adjust brightness, change colors, toggle lights, and apply special effects (cycling through multiple colors/brightness settings).
 
 - **Group Light Syncing:**  
-  Control lights for groups of users simultaneously to enable synchronized lighting effects across multiple devices.
+  Control lights for groups of users on different home networks to simultaneously to enable synchronized lighting effects across multiple devices.
 
 - **Command-Based Interaction:**  
   Users can control the lights through commands directly inputted into the messaging channels where the bot is active.
