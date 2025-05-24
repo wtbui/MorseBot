@@ -1,4 +1,3 @@
-# Define variables
 PROJECT_DIR := $(CURDIR)
 BIN_DIR := $(PROJECT_DIR)/build/bin
 BINARY_NAME := Morsebot

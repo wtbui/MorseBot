@@ -14,11 +14,11 @@ import (
 )
 
 var (
-	CommandPrefix = "!"
+	CommandPrefix = "+"
 )
 
-// Define entry points into commands here
-type CommandFunc func(s *discordgo.Session, cid string, botOpts *utils.BotOptions) error
+// Register user commands for bot here
+type CommandFunc func(s *discordgo.Session, cid string, botOpts *utils.BotOptions) utils.JobReport
 var commandMap = map[string]Command {
 	"help": Command{"help", echo.RunEcho, "Displays this help message"},
 	"echo": Command{"echo", echo.RunEcho, "Echoes back a message in the same channel"},
@@ -31,6 +31,7 @@ type Command struct {
 	Descrip string
 } 
 
+// TURN ON EVENT LISTENING FOR BOT
 func InitBot(s *discordgo.Session) (err error) {
 	s.Open()
 
@@ -64,7 +65,7 @@ func ready(s *discordgo.Session, event *discordgo.Ready) {
 	s.UpdateGameStatus(1, "That's Golf!")
 }
 
-// Message Create Event Handler
+// Message Create Event Listener/Handler
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	zap.S().Info("Message Found in " + m.ChannelID + " from " + m.Author.ID)
 
@@ -85,24 +86,30 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			runHelp(s, m.ChannelID)
 			return
 		}
-
+		
+		var jobStatus utils.JobReport  
 		zap.S().Info("Attempting to run command " + opts.Command + " from user " + m.Author.ID)
 		if cmdFunc, ok := commandMap[opts.Command]; ok {
-			err = cmdFunc.CmdFunc(s, m.ChannelID, opts)
+			jobStatus = cmdFunc.CmdFunc(s, m.ChannelID, opts)
 		} else {
 			zap.S().Info("Unrecognized Command")
 			return
 		} 
-	
-		if err != nil {
+
+		if jobStatus.DoPrint {
+			utils.GenerateReportEmbed(s, m.ChannelID, jobStatus)
+		}
+
+		if !jobStatus.Status {
 			zap.S().Info("Failure to execute command")
-			zap.S().Info(err)
+			zap.S().Info(jobStatus.E)
 		} else {
 			zap.S().Info("Command " + opts.Command + " ran succesfully")
 		}
 	}
 }
 
+// Displays Help Message
 func runHelp(s *discordgo.Session, cid string) {
 	eb := utils.NewEmbed()
 	eb.SetTitle("Morse Bot Help Menu")

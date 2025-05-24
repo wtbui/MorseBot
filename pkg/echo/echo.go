@@ -6,10 +6,10 @@ import (
 )
 
 
-func RunEcho(s *discordgo.Session, cid string, botOpts *utils.BotOptions) error {
+func RunEcho(s *discordgo.Session, cid string, botOpts *utils.BotOptions) utils.JobReport {
 	s.ChannelMessageSend(cid, "echo")
 
-	return nil
+	return utils.JobReport{"test", true, false, nil}
 }
 
 

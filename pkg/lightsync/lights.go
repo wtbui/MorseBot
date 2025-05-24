@@ -3,6 +3,8 @@ package lightsync
 import (
 	"strconv"
 	"strings"
+	"context"
+	"golang.org/x/sync/errgroup"
 
 	discordgo "github.com/bwmarrin/discordgo"
 	utils "github.com/wtbui/MorseBot/pkg/utils"
@@ -12,7 +14,6 @@ import (
 )
 
 type LSyncJob struct {
-	Users []string
 	Off bool
 	Color int
 	Temp int
@@ -20,70 +21,81 @@ type LSyncJob struct {
 	EffectParamId int
 }
  
-func RunLightsync(s *discordgo.Session, cid string, botOpts *utils.BotOptions) error {
-	lJob, err := parseOptions(botOpts)
-	if err != nil {
-		return err
-	}
-	
+func RunLightsync(s *discordgo.Session, cid string, botOpts *utils.BotOptions) utils.JobReport {
 	zap.S().Debug("Starting lights job")
-	err = runLightsJob(lJob)
-	jobReport := utils.JobReport{"Lights Change", true} 
+	jobReport := utils.JobReport{"Lights Change", false, true, nil}
+
+	users, lJob, err := parseOptions(botOpts)
 	if err != nil {
-		jobReport.Status = false
-		utils.GenerateReportEmbed(s, cid, jobReport)
-		
+		jobReport.E = err
+		return jobReport
+	}
+	
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	
+	group, ctx := errgroup.WithContext(ctx)
+	for _, user := range users {
+		user := user
+		group.Go(func() error {
+			return runLightsJob(ctx, user, lJob)
+		})
+	}
+
+	err = group.Wait()
+
+	if err != nil {
+		jobReport.E = err
+	} else {
+		jobReport.Status = true
+	}
+	
+	return jobReport
+}
+
+func runLightsJob(ctx context.Context, user string, lJob *LSyncJob) error {
+	gclient, err := goveego.Init(user)
+	if err != nil {
 		return err
 	}
 	
-	utils.GenerateReportEmbed(s, cid, jobReport)
-	return nil
-}
+	if lJob.Off {
+		err = gclient.TurnOnOffAll(0)
+		return err	
+	} else {
+		err = gclient.TurnOnOffAll(1)
+	}
 
-func runLightsJob(lJob *LSyncJob) error {
-	for _, user := range lJob.Users {
-		gclient, err := goveego.Init(user)
-		if err != nil {
-			return err
-		}
-		
-		if lJob.Off {
-			err = gclient.TurnOnOffAll(0)
-			return err	
-		} else {
-			err = gclient.TurnOnOffAll(1)
-		}
+	if err != nil {
+		return err
+	}
+	
+	if lJob.EffectId > -1 {
+		err = gclient.ChangeEffectAll(lJob.EffectParamId, lJob.EffectId)
+		return err
+	}
 
-		if err != nil {
-			return err
-		}
-		
-		if lJob.EffectId > -1 {
-			err = gclient.ChangeEffectAll(lJob.EffectParamId, lJob.EffectId)
-			return err
-		}
+	if lJob.Temp > -1 {
+		err = gclient.ChangeTempAll(lJob.Temp)
+		return err
+	}
 
-		if lJob.Temp > -1 {
-			err = gclient.ChangeTempAll(lJob.Temp)
-			return err
-		}
-
-		if lJob.Color > -1 {
-			err = gclient.ChangeColorAll(lJob.Color)
-			return err
-		}
+	if lJob.Color > -1 {
+		err = gclient.ChangeColorAll(lJob.Color)
+		return err
 	}
 
 	return nil
 }
 
-func parseOptions(botOpts *utils.BotOptions) (*LSyncJob, error) {
-	newJob := &LSyncJob{[]string{}, false, -1, -1, -1, -1}
+func parseOptions(botOpts *utils.BotOptions) ([]string, *LSyncJob, error) {
+	newJob := &LSyncJob{false, -1, -1, -1, -1}
+	users := []string{}
 
 	// Fetch from Database
 	goveeDb, err := data.RetrieveCurrentGDB()	
 	if err != nil {
-		return nil, err
+		return users, nil, err
 	}
 
 	zap.S().Debug("Length of recieved database")
@@ -91,19 +103,20 @@ func parseOptions(botOpts *utils.BotOptions) (*LSyncJob, error) {
 
 	if len(botOpts.Username) > 0 {
 		if target, ok := goveeDb[botOpts.Username]; ok {
-			newJob.Users = append(newJob.Users, target.GKey)
+			users = append(users, target.GKey)
 		}
 	} else {
 		if target, ok := goveeDb[botOpts.Sender]; ok {
-			newJob.Users = append(newJob.Users, target.GKey)	
+			users = append(users, target.GKey)	
 		}
 	}
-
+	
+	// Parse light job arguments 
 	for _, opt := range botOpts.Aux {
 		if opt == "all" {
-			newJob.Users = []string{}
+			users = []string{}
 			for _, reg := range goveeDb {
-				newJob.Users = append(newJob.Users, reg.GKey)
+				users = append(users, reg.GKey)
 			}
 		}
 
@@ -129,6 +142,6 @@ func parseOptions(botOpts *utils.BotOptions) (*LSyncJob, error) {
 		}
 	}	
 
-	return newJob, nil
+	return users, newJob, nil
 }
 

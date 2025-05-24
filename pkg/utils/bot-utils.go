@@ -6,6 +6,8 @@ import (
 type JobReport struct {
 	Job string
 	Status bool
+	DoPrint bool 
+	E error
 }
 
 func GenerateReportEmbed(s *discordgo.Session, cid string, report JobReport) {

@@ -1,11 +1,9 @@
 package goveego
 
 import (
-	//"fmt"
 	"io"
 	"net/http"
 	"encoding/json"
-	//"os"
 	"bytes"
 	"strconv"
 	"go.uber.org/zap"
