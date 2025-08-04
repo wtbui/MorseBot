@@ -10,11 +10,17 @@ import (
 	discordgo "github.com/bwmarrin/discordgo"
 	logger "github.com/wtbui/MorseBot/pkg/logging"
   "go.uber.org/zap"
+	"github.com/joho/godotenv"
 )
 
 // Initialize Morse Bot + Logger 
 func Start(opts *options.Options) (int, error) {
 	logger.InitLogger(opts.Verbose)
+
+	err := godotenv.Load()
+  if err != nil {
+		return ExitError, err
+  }
 
 	// Register any new govee keys to database
 	if len(opts.RegisterGKey) > 0 {
