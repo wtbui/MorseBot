@@ -49,13 +49,18 @@ func Start(opts *options.Options) (int, error) {
 		}
 	}
 
+	cmdPre := os.Getenv("MBCMDPRE")
+	if len(cmdPre) == 0 {
+		zap.S().Info("No prefix detected, defaulting to '!'")
+	}
+
 	zap.S().Info("Found API Key: " + token)
 	mb_sess, err := discordgo.New("Bot " + token)
 	if err != nil {
 		return ExitError, err
 	}
 	
-	err = events.InitBot(mb_sess)
+	err = events.InitBot(mb_sess, cmdPre)
 	if err != nil {
 		return ExitError, err
 	}

@@ -5,6 +5,7 @@ import (
 	"strings"
 	"context"
 	"golang.org/x/sync/errgroup"
+	"time"
 
 	discordgo "github.com/bwmarrin/discordgo"
 	utils "github.com/wtbui/MorseBot/pkg/utils"
@@ -22,6 +23,7 @@ type LSyncJob struct {
 }
  
 func RunLightsync(s *discordgo.Session, cid string, botOpts *utils.BotOptions) utils.JobReport {
+	start := time.Now()
 	zap.S().Debug("Starting lights job")
 	jobReport := utils.JobReport{"Lights Change", false, true, nil}
 
@@ -50,6 +52,8 @@ func RunLightsync(s *discordgo.Session, cid string, botOpts *utils.BotOptions) u
 		jobReport.Status = true
 	}
 	
+	elapsed := time.Since(start)
+	zap.S().Debug("Execution Time: ", elapsed)
 	return jobReport
 }
 

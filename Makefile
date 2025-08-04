@@ -21,5 +21,13 @@ run: build
 	@echo "Running the application..."
 	$(BIN_DIR)/$(BINARY_NAME)
 
+# Debug run 
+debug: build 
+	@echo "Running in debug mode..."
+	$(BIN_DIR)/$(BINARY_NAME) --debug
+
+help: build 
+	$(BIN_DIR)/$(BINARY_NAME) --help
+
 # Phony targets
 .PHONY: all build clean run

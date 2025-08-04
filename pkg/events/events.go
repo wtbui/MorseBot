@@ -14,10 +14,9 @@ import (
 )
 
 var (
-	CommandPrefix = "+"
+	CommandPrefix = "!"
 )
 
-// Register user commands for bot here
 type CommandFunc func(s *discordgo.Session, cid string, botOpts *utils.BotOptions) utils.JobReport
 var commandMap = map[string]Command {
 	"help": Command{"help", echo.RunEcho, "Displays this help message"},
@@ -32,8 +31,10 @@ type Command struct {
 } 
 
 // TURN ON EVENT LISTENING FOR BOT
-func InitBot(s *discordgo.Session) (err error) {
+func InitBot(s *discordgo.Session, cmdPre string) (err error) {
 	s.Open()
+
+	CommandPrefix = cmdPre
 
 	err = registerHandlers(s)
 	if err != nil {
@@ -109,7 +110,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 }
 
-// Displays Help Message
 func runHelp(s *discordgo.Session, cid string) {
 	eb := utils.NewEmbed()
 	eb.SetTitle("Morse Bot Help Menu")
