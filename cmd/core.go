@@ -52,6 +52,7 @@ func Start(opts *options.Options) (int, error) {
 	cmdPre := os.Getenv("MBCMDPRE")
 	if len(cmdPre) == 0 {
 		zap.S().Info("No prefix detected, defaulting to '!'")
+		cmdPre = "!"
 	}
 
 	zap.S().Info("Found API Key: " + token)
