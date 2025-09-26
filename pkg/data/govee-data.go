@@ -6,12 +6,22 @@ import (
 	"io/ioutil"
 	"go.uber.org/zap"
 	"strconv"
+
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 type GRegistration struct {
 	User string
 	GKey string
 }
 
+var MongoClient *mongo.Client 
+
+func ConnectDB(uri string) {
+		
+}
+
+// TODO 
 func RegisterUser(regStr string) error {
 	regList, err := ParseRegistrations(regStr)
 	if err != nil {
@@ -26,6 +36,46 @@ func RegisterUser(regStr string) error {
 	return nil	
 }
 
+// TODO
+func DeleteUser(user string) error {
+	currentGDB, err := RetrieveCurrentGDB()
+	if err != nil {
+		return err
+	}
+
+	_, exists := currentGDB[user]
+	if exists {
+		zap.S().Info("Deleted user \"" + user + "\"")
+		delete(currentGDB, user)
+	} else {
+		zap.S().Info("User \"" + user + "\" not found")
+	}
+
+	for user, _ := range currentGDB {
+		zap.S().Info(user)
+	}
+	
+	err = writeRegistrations(currentGDB)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// TODO
+func UserExist(username string) (bool, error) {
+	currentGDB, err := RetrieveCurrentGDB()
+	if err != nil {
+		return false, err
+	}
+
+	_, exists := currentGDB[username]
+
+	return exists, nil
+}
+
+// DEPRECATE
 func ParseRegistrations(regStr string) (map[string]*GRegistration, error) {
 	regStrList := strings.Split(strings.ReplaceAll(regStr, " ", ""), ",")
 	regList := map[string]*GRegistration{}
@@ -63,6 +113,7 @@ func ParseRegistrations(regStr string) (map[string]*GRegistration, error) {
 	return regList, nil
 }
 
+// DEPRECATE
 func UpdateRegistrations(regList map[string]*GRegistration) error { 
 	oldRegList, err := RetrieveCurrentGDB()
 	if err != nil {
@@ -84,6 +135,7 @@ func UpdateRegistrations(regList map[string]*GRegistration) error {
 	return err
 }
 
+// Could be useful, swap format to json?
 func writeRegistrations(regList map[string]*GRegistration) error {
 	dbFile := os.Getenv("GOVEEDB")
 	file, err := os.OpenFile(dbFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
@@ -102,6 +154,7 @@ func writeRegistrations(regList map[string]*GRegistration) error {
 	return nil
 }
 
+// Deprecate, could be useful?
 func RetrieveCurrentGDB() (map[string]*GRegistration, error) {
 	dbFile := os.Getenv("GOVEEDB")
 	content, err := ioutil.ReadFile(dbFile)
@@ -112,40 +165,3 @@ func RetrieveCurrentGDB() (map[string]*GRegistration, error) {
 	zap.S().Debug("Raw Govee Database: " + string(content))
 	return ParseRegistrations(string(content))
 } 
-
-func UserExist(username string) (bool, error) {
-	currentGDB, err := RetrieveCurrentGDB()
-	if err != nil {
-		return false, err
-	}
-
-	_, exists := currentGDB[username]
-
-	return exists, nil
-}
-
-func DeleteUser(user string) error {
-	currentGDB, err := RetrieveCurrentGDB()
-	if err != nil {
-		return err
-	}
-
-	_, exists := currentGDB[user]
-	if exists {
-		zap.S().Info("Deleted user \"" + user + "\"")
-		delete(currentGDB, user)
-	} else {
-		zap.S().Info("User \"" + user + "\" not found")
-	}
-
-	for user, _ := range currentGDB {
-		zap.S().Info(user)
-	}
-	
-	err = writeRegistrations(currentGDB)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
