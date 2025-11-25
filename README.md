@@ -1,6 +1,6 @@
 # MorseBot
 
-Morsebot is a messaging bot for Discord that allows users to control IoT Govee lights using commands on Discord messaging channels. MorseBot provides a seamless way to manage both individual devices and groups for synchronized lighting experiences.
+Morsebot is a Discord bot that allows users to control IoT Govee lights using commands on Discord messaging channels. MorseBot provides a seamless way to manage both individual devices and groups for synchronized lighting experiences.
 
 ## Features
 
