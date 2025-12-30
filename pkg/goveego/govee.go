@@ -7,100 +7,67 @@ import (
 	"bytes"
 	"strconv"
 	"go.uber.org/zap"
+	"fmt"
+	"github.com/google/uuid"
 )
 
 type GoveeClient struct {
 	APIKey string
-	Devices []GDevice
+	Devices []Device
 }
 
-type GDevice struct {
-	SKU string `json:"sku"`
-	DeviceAddr string `json:"device"`
-	DeviceName string `json:"deviceName"`
-	DeviceType string `json:"type"`
+type Device struct {
+	SKU        string          `json:"sku"`
+	DeviceAddr string          `json:"device"`
+	DeviceName string          `json:"deviceName"`
+	DeviceType string          `json:"type"`
 }
 
-type GDevResponse struct {
-	Code int `json:"code"`
-	Message string `json:"message"`
-	Devices []GDevice `json:"data"`
+type DeviceResponse struct {
+	Code       int             `json:"code"`
+	Message    string          `json:"message"`
+	Devices    []Device        `json:"data"`
 }
 
-type GConResponse struct {
-	SKU string `json:"sku"`
+type ControlResponse struct {
+	SKU        string          `json:"sku"`
 }
 
-type GConBody struct {
-	RequestId string `json:"requestId"`
-	Payload GConBodyPayload `json:"payload"`
+type ControlReq struct {
+	RequestId  string          `json:"requestId"`
+	Payload    json.RawMessage `json:"payload"`
 }
 
-type GConBodyPayload struct {
-	SKU string `json:"sku"`
-	Device string `json:"device"`
-	Capability GConBodyCap `json:"capability"`
+type CapabilityBody struct {
+	Type       string          `json:"type"`
+	Instance   string          `json:"instance"`
+	Value      json.RawMessage `json:"value"`
 }
 
-type GConBodyCapabilitySingle struct {
-	Type string `json:"type"`
-	Instance string `json:"instance"`
-	Value int `json:"value"` 
-}
-
-type GConBodyCapabilityEffect struct {
-	Type string `json:"type"`
-	Instance string `json:"instance"`
-	Value GConCapEffectValue `json:"value"`
-}
-
-type GConCapEffectValue struct {
-	Id int `json:"id"`
-	ParamId int `json:"paramId"`
-}
-
-type GConBodyCap interface {
-	GetType() string
-}
-
-func (gcap GConBodyCapabilitySingle) GetType() string {
-	return gcap.Type
-}
-
-func (gcap GConBodyCapabilityEffect) GetType() string {
-	return gcap.Type
-}
-
-type CapData struct {
-	Type string
-	Value []int
-}
-
-var (
-	devUrl = "https://openapi.api.govee.com/router/api/v1/user/devices"
-	controlUrl = "https://openapi.api.govee.com/router/api/v1/device/control"
+const (
+	deviceURL = "https://openapi.api.govee.com/router/api/v1/user/devices"
+	controlURL = "https://openapi.api.govee.com/router/api/v1/device/control"
 )
 
-func Init(APIKey string) (*GoveeClient, error) {
-	gclient := &GoveeClient{APIKey, []GDevice{}}
+func NewClient(APIKey string) (*GoveeClient, error) {
+	gclient := &GoveeClient{APIKey, []Device{}}
 	
 	zap.S().Debug("Establishing connection to GoveeAPI and getting devices with api-key: " + gclient.APIKey)
-	clientInfo, err := makeRequest(gclient, devUrl, "GET", nil)
+	clientInfo, err := makeRequest(gclient, deviceURL, "GET", nil)
 	if err != nil {
 		return nil, err
 	}
 
 	zap.S().Debug("Request from api recieved, grabbing response")
-	// Parse the JSON response into the struct
-	var response GDevResponse
-	err = json.Unmarshal(clientInfo, &response)
+	var resp DeviceResponse
+	err = json.Unmarshal(clientInfo, &resp)
 	if err != nil {
 		return nil, err
 	}
 
 	// Iterate over the data and get the "sku"
-	for _, device := range response.Devices {
-		zap.S().Debug("Found device " + device.DeviceName + " with device type " + device.DeviceType)
+	for _, device := range resp.Devices {
+		zap.S().Debugw("Found device", "name", device.DeviceName, "type", device.DeviceType)
 		if device.DeviceType == "devices.types.light" {
 			gclient.Devices = append(gclient.Devices, device)
 		}	
@@ -111,14 +78,12 @@ func Init(APIKey string) (*GoveeClient, error) {
 }
 
 func makeRequest(gclient *GoveeClient, url string, reqType string, reqBody []byte) ([]byte, error) {
-	// Create a new HTTP request
 	zap.S().Debug("Generating request: " + reqType + " " + url)
-	
-	req, err := http.NewRequest(reqType, url, bytes.NewBuffer(reqBody))
-	if reqBody == nil {
-		req, err = http.NewRequest(reqType, url, nil)
+	var body io.Reader
+	if reqBody != nil {
+		body = bytes.NewBuffer(reqBody)
 	}
-
+	req, err := http.NewRequest(reqType, url, body)
 	if err != nil {
 		return nil, err
 	}
@@ -129,139 +94,90 @@ func makeRequest(gclient *GoveeClient, url string, reqType string, reqBody []byt
 
 	// Create an HTTP client and send the request
 	zap.S().Debug("Making request...")
-	zap.S().Debug(req)
+	zap.S().Debugw("http request", "method", req.Method, "url", req.URL.String())
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
+
 	defer resp.Body.Close()
-	
 	zap.S().Debug("Reading response...")
-	respInfo, err := io.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
-	zap.S().Debug("Recieved Response: " + string(respInfo))
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("http error %d: %s", resp.StatusCode, respBody)
+	}
+	zap.S().Debug("Recieved Response: " + string(respBody))
 
-	return respInfo, err
+	return respBody, err
 }
 
-func (gclient GoveeClient) UpdateDevice(device GDevice, capType string, capInst string, capData CapData) error { 
-	var cap GConBodyCap
-
-	if capData.Type == "single" {
-		cap = GConBodyCapabilitySingle{
-			Type: capType,
-			Instance: capInst,
-			Value: capData.Value[0],
-		}
-	} else if capData.Type == "effect" {
-		cap = GConBodyCapabilityEffect{
-			Type: capType,
-			Instance: capInst,
-			Value: GConCapEffectValue{
-				Id: capData.Value[1],
-				ParamId: capData.Value[0],
-			},
-		}
+func (gclient *GoveeClient) UpdateDevice(device Device, capIdentity CapabilityIdentifier, capInput []int) error { 
+	reqBody := CapabilityBody{
+		Type: capIdentity.Type,
+		Instance: capIdentity.Instance,
 	}
 
-	reqBody := GConBody{
-		RequestId: "uuid",
-		Payload: GConBodyPayload{
-			SKU: device.SKU,
-			Device: device.DeviceAddr,
-			Capability: cap,
-		},
+	if len(capInput) == 1 {
+		valueBytes, err := json.Marshal(capInput[0])
+		if err != nil { 
+			return err 
+		}
+		reqBody.Value = valueBytes
+	} else if len(capInput) == 2 {
+		valueBytes, err := json.Marshal(
+			&struct{
+				Id 		int `json:"id"`
+				ParamId int `json:"paramId"`
+			}{
+				Id: capInput[0],
+				ParamId: capInput[1],
+			},
+		)
+		if err != nil { 
+			return err 
+		}
+		reqBody.Value = valueBytes
+	} else {
+		return fmt.Errorf("Invalid capability input length: %d", len(capInput))
+	}
+
+	payloadBytes, err := json.Marshal(&struct {
+		SKU        string          `json:"sku"`
+		Device     string          `json:"device"`
+		Capability CapabilityBody  `json:"capability"`
+	}{
+		SKU:        device.SKU,
+		Device:     device.DeviceAddr,
+		Capability: reqBody,
+	})
+	if err != nil { 
+		return err 
+	}
+
+	reqJson := ControlReq{
+		RequestId: uuid.NewString(),
+		Payload: payloadBytes, 
 	}
 	
-	jsonData, err := json.Marshal(reqBody)
+	reqBytes, err := json.Marshal(reqJson)
 	if err != nil {
 		return err
 	}
 
-	clientInfo, err := makeRequest(&gclient, controlUrl, "POST", jsonData)
+	respBytes, err := makeRequest(gclient, controlURL, "POST", reqBytes)
 	if err != nil {
 		return err
 	}
 
-	var response GConResponse
-	err = json.Unmarshal(clientInfo, &response)
+	var respJson ControlResponse
+	err = json.Unmarshal(respBytes, &respJson)
 	if err != nil {
 		return err
 	}
 
 	return nil
 }
-
-func (gclient GoveeClient) TurnOnOff(device GDevice, value int) error {
-	zap.S().Debug("Setting light powerswitch value to " + strconv.Itoa(value) + " for device " + device.DeviceName)
-	err := gclient.UpdateDevice(device, "devices.capabilities.on_off", "powerSwitch", CapData{"single", []int{value}})
-	return err
-}
-
-func (gclient GoveeClient) TurnOnOffAll(value int) error {
-	for _, device := range gclient.Devices {
-		err := gclient.TurnOnOff(device, value)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (gclient GoveeClient) ChangeColor(device GDevice, value int) error {
-	zap.S().Debug("Setting light colorId value to " + strconv.Itoa(value) + " for device " + device.DeviceName)
-	err := gclient.UpdateDevice(device, "devices.capabilities.color_setting", "colorRgb", CapData{"single", []int{value}})
-	return err
-}
-
-func (gclient GoveeClient) ChangeColorAll(value int) error {
-	for _, device := range gclient.Devices {
-		err := gclient.ChangeColor(device, value)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (gclient GoveeClient) ChangeTemp(device GDevice, value int) error {
-	zap.S().Debug("Setting light colorTemperatureK value to " + strconv.Itoa(value) + " for device " + device.DeviceName)
-	err := gclient.UpdateDevice(device, "devices.capabilities.color_setting", "colorTemperatureK", CapData{"single", []int{value}})
-	return err
-}
-
-func (gclient GoveeClient) ChangeTempAll(value int) error {
-	for _, device := range gclient.Devices {
-		err := gclient.ChangeTemp(device, value)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (gclient GoveeClient) ChangeEffect(device GDevice, paramId int, id int) error {
-	zap.S().Debug("Setting light lightscene value to " + strconv.Itoa(id) + " for device " + device.DeviceName)
-	err := gclient.UpdateDevice(device, "devices.capabilities.dynamic_scene", "lightScene", CapData{"effect", []int{paramId, id}})
-	return err
-}
-
-func (gclient GoveeClient) ChangeEffectAll(paramId int, id int) error {
-	for _, device := range gclient.Devices {
-		err := gclient.ChangeEffect(device, paramId, id)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-
-

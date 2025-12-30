@@ -9,7 +9,7 @@ import (
 
 	discordgo "github.com/bwmarrin/discordgo"
 	utils "github.com/wtbui/MorseBot/pkg/utils"
-  goveego "github.com/wtbui/MorseBot/pkg/goveego"
+ 	goveego "github.com/wtbui/MorseBot/pkg/goveego"
 	data "github.com/wtbui/MorseBot/pkg/data"
 	"go.uber.org/zap"
 )
@@ -55,41 +55,6 @@ func RunLightsync(s *discordgo.Session, cid string, botOpts *utils.BotOptions) u
 	elapsed := time.Since(start)
 	zap.S().Debug("Execution Time: ", elapsed)
 	return jobReport
-}
-
-func runLightsJob(ctx context.Context, user string, lJob *LSyncJob) error {
-	gclient, err := goveego.Init(user)
-	if err != nil {
-		return err
-	}
-	
-	if lJob.Off {
-		err = gclient.TurnOnOffAll(0)
-		return err	
-	} else {
-		err = gclient.TurnOnOffAll(1)
-	}
-
-	if err != nil {
-		return err
-	}
-	
-	if lJob.EffectId > -1 {
-		err = gclient.ChangeEffectAll(lJob.EffectParamId, lJob.EffectId)
-		return err
-	}
-
-	if lJob.Temp > -1 {
-		err = gclient.ChangeTempAll(lJob.Temp)
-		return err
-	}
-
-	if lJob.Color > -1 {
-		err = gclient.ChangeColorAll(lJob.Color)
-		return err
-	}
-
-	return nil
 }
 
 func parseOptions(botOpts *utils.BotOptions) ([]string, *LSyncJob, error) {
@@ -148,4 +113,39 @@ func parseOptions(botOpts *utils.BotOptions) ([]string, *LSyncJob, error) {
 
 	return users, newJob, nil
 }
+
+func runLightsJob(ctx context.Context, user string, lJob *LSyncJob) error {
+	gclient, err := goveego.NewClient(user)
+	if err != nil { 
+		return err 
+	}
+	
+	if lJob.Off {
+		err = gclient.ChangeLightAll(goveego.OFF, []int{0}) 
+		return err
+	} else {
+		err = gclient.ChangeLightAll(goveego.OFF, []int{1}) 
+		if err != nil { 
+			return err 
+		}
+	}
+	
+	if lJob.EffectId > -1 {
+		err = gclient.ChangeLightAll(goveego.EFFECT, []int{lJob.EffectId, lJob.EffectParamId})
+		return err
+	}
+
+	if lJob.Temp > -1 {
+		err = gclient.ChangeLightAll(goveego.TEMP, []int{lJob.Temp}) 
+		return err
+	}
+
+	if lJob.Color > -1 {
+		err = gclient.ChangeLightAll(goveego.COLOR, []int{lJob.Color}) 
+		return err
+	}
+
+	return nil
+}
+
 
