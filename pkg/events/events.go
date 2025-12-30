@@ -19,8 +19,8 @@ var (
 
 type CommandFunc func(s *discordgo.Session, cid string, botOpts *utils.BotOptions) utils.JobReport
 var commandMap = map[string]Command {
-	"help": Command{"help", echo.RunEcho, "Displays this help message"},
-	"echo": Command{"echo", echo.RunEcho, "Echoes back a message in the same channel"},
+	"help":   Command{"help", echo.RunEcho, "Displays this help message"},
+	"echo":   Command{"echo", echo.RunEcho, "Echoes back a message in the same channel"},
 	"lights": Command{"lights", lsyn.RunLightsync, "Adjusts lights"},
 }
 
@@ -30,7 +30,6 @@ type Command struct {
 	Descrip string
 } 
 
-// TURN ON EVENT LISTENING FOR BOT
 func InitBot(s *discordgo.Session, cmdPre string) (err error) {
 	s.Open()
 

@@ -25,6 +25,9 @@ type LSyncJob struct {
 func RunLightsync(s *discordgo.Session, cid string, botOpts *utils.BotOptions) utils.JobReport {
 	start := time.Now()
 	zap.S().Debug("Starting lights job")
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	jobReport := utils.JobReport{"Lights Change", false, true, nil}
 
 	users, lJob, err := parseOptions(botOpts)
@@ -32,9 +35,6 @@ func RunLightsync(s *discordgo.Session, cid string, botOpts *utils.BotOptions) u
 		jobReport.E = err
 		return jobReport
 	}
-	
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 	
 	group, ctx := errgroup.WithContext(ctx)
 	for _, user := range users {

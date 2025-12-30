@@ -16,7 +16,7 @@ clean:
 	@echo "Cleaning up the binary..."
 	@rm -f $(BIN_DIR)/$(BINARY_NAME)
 
-# Run target (optional)
+# Run target
 run: build
 	@echo "Running the application..."
 	$(BIN_DIR)/$(BINARY_NAME)
