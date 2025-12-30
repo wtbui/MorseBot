@@ -124,7 +124,7 @@ func runLightsJob(ctx context.Context, user string, lJob *LSyncJob) error {
 		err = gclient.ChangeLightAll(goveego.OFF, []int{0}) 
 		return err
 	} else {
-		err = gclient.ChangeLightAll(goveego.OFF, []int{1}) 
+		err = gclient.ChangeLightAll(goveego.ON, []int{1}) 
 		if err != nil { 
 			return err 
 		}
