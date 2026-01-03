@@ -121,27 +121,27 @@ func runLightsJob(ctx context.Context, user string, lJob *LSyncJob) error {
 	}
 	
 	if lJob.Off {
-		err = gclient.ChangeLightAll(goveego.OFF, []int{0}) 
+		err = gclient.ChangeLightAll(ctx, goveego.OFF, []int{0}) 
 		return err
 	} else {
-		err = gclient.ChangeLightAll(goveego.ON, []int{1}) 
+		err = gclient.ChangeLightAll(ctx, goveego.ON, []int{1}) 
 		if err != nil { 
 			return err 
 		}
 	}
 	
 	if lJob.EffectId > -1 {
-		err = gclient.ChangeLightAll(goveego.EFFECT, []int{lJob.EffectId, lJob.EffectParamId})
+		err = gclient.ChangeLightAll(ctx, goveego.EFFECT, []int{lJob.EffectId, lJob.EffectParamId})
 		return err
 	}
 
 	if lJob.Temp > -1 {
-		err = gclient.ChangeLightAll(goveego.TEMP, []int{lJob.Temp}) 
+		err = gclient.ChangeLightAll(ctx, goveego.TEMP, []int{lJob.Temp}) 
 		return err
 	}
 
 	if lJob.Color > -1 {
-		err = gclient.ChangeLightAll(goveego.COLOR, []int{lJob.Color}) 
+		err = gclient.ChangeLightAll(ctx, goveego.COLOR, []int{lJob.Color}) 
 		return err
 	}
 

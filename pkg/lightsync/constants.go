@@ -13,6 +13,7 @@ var LColors = map[string]int{
 	"orange": 16753920,
 	"white": 16777215,
 	"yellow": 16776960,
+	"poop": 3547922,
 }
 
 var LTemps = map[string]int {

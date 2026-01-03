@@ -2,6 +2,8 @@ package goveego
 
 import (
 	"go.uber.org/zap"
+	"context"
+	"golang.org/x/sync/errgroup"
 )
 
 type Capability string 
@@ -26,19 +28,21 @@ type CapabilityIdentifier struct {
 	Instance string
 }
 
-func (gclient *GoveeClient) ChangeLight(device Device, capability Capability, capInput []int) error {
+func (gclient *GoveeClient) ChangeLight(ctx context.Context, device Device, capability Capability, capInput []int) error {
 	zap.S().Debugw("Setting capability", "capability", capability, "value", capInput, "device", device.DeviceName,)
 	err := gclient.UpdateDevice(device, Capabilities[capability], capInput)
 	return err
 }
 
-func (gclient *GoveeClient) ChangeLightAll(capability Capability, capInput []int) error {
+func (gclient *GoveeClient) ChangeLightAll(ctx context.Context, capability Capability, capInput []int) error {
+	group, ctx := errgroup.WithContext(ctx) 
 	for _, device := range gclient.Devices {
-		err := gclient.ChangeLight(device, capability, capInput)
-		if err != nil {
-			return err
-		}
+		device := device
+		group.Go(func() error {
+			return gclient.ChangeLight(ctx, device, capability, capInput)
+		})
 	}
-
-	return nil
+	
+	err := group.Wait()
+	return err
 }
