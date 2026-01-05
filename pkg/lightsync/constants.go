@@ -23,5 +23,6 @@ var LTemps = map[string]int {
 }
 
 var LEffects = map[string]LEffect{
-	"valosignal": LEffect{3296, 3146}, 
+	//"valosignal": LEffect{3296, 3146}, 
+	"valosignal": LEffect{3146, 3296}, 
 }

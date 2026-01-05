@@ -15,10 +15,11 @@ import (
 )
 
 type LSyncJob struct {
-	Off bool
-	Color int
-	Temp int
-	EffectId int
+	Off           bool
+	Color         int
+	Temp          int
+	Brightness    int 
+	EffectId      int
 	EffectParamId int
 }
  
@@ -58,7 +59,7 @@ func RunLightsync(s *discordgo.Session, cid string, botOpts *utils.BotOptions) u
 }
 
 func parseOptions(botOpts *utils.BotOptions) ([]string, *LSyncJob, error) {
-	newJob := &LSyncJob{false, -1, -1, -1, -1}
+	newJob := &LSyncJob{false, -1, -1, -1, -1, -1}
 	users := []string{}
 
 	// Fetch from Database
@@ -94,7 +95,7 @@ func parseOptions(botOpts *utils.BotOptions) ([]string, *LSyncJob, error) {
 		}
 
 		if utils.IsNumeric(opt) {
-			newJob.Color, _ = strconv.Atoi(opt)
+			newJob.Brightness, _ = strconv.Atoi(opt)
 		}
 
 		if strings.ToLower(opt) == "off" {
@@ -128,6 +129,13 @@ func runLightsJob(ctx context.Context, user string, lJob *LSyncJob) error {
 		if err != nil { 
 			return err 
 		}
+	}
+
+	if lJob.Brightness > -1 {
+		err = gclient.ChangeLightAll(ctx, goveego.BRIGHT, []int{lJob.Brightness})
+		if err != nil {
+			return err
+		} 
 	}
 	
 	if lJob.EffectId > -1 {

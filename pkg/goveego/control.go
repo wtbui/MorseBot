@@ -10,9 +10,10 @@ type Capability string
 const (
 	ON     Capability  = "on"
 	OFF    Capability  = "off"
-	COLOR  Capability = "color"
+	COLOR  Capability  = "color"
 	TEMP   Capability  = "temp"
 	EFFECT Capability  = "effect"
+	BRIGHT Capability  = "bright" 
 )
 
 var Capabilities = map[Capability]CapabilityIdentifier{
@@ -21,10 +22,11 @@ var Capabilities = map[Capability]CapabilityIdentifier{
 	COLOR:  CapabilityIdentifier{"devices.capabilities.color_setting", "colorRgb"},
 	TEMP:   CapabilityIdentifier{"devices.capabilities.color_setting", "colorTemperatureK"}, 
 	EFFECT: CapabilityIdentifier{"devices.capabilities.dynamic_scene", "lightScene"},
+	BRIGHT: CapabilityIdentifier{"devices.capabilities.range", "brightness"},
 }
 
 type CapabilityIdentifier struct {
-	Type 	string
+	Type     string
 	Instance string
 }
 
